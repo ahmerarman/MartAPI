@@ -1,0 +1,395 @@
+def test_create_vendor():
+
+    connection_string = str(settings.TEST_DATABASE_URL).replace(
+        "postgresql", "postgresql+psycopg")
+    if connection_string is None:
+        raise EnvironmentError("TEST_DATABASE_URL not found in .env file.")
+
+    engine = create_engine(
+        connection_string, connect_args={"sslmode": "require"}, pool_recycle=300)
+
+    SQLModel.metadata.create_all(engine)  
+
+    with Session(engine) as session:  
+
+        def get_session_override():  
+                return session  
+
+        app.dependency_overrides[get_session] = get_session_override 
+
+        client = TestClient(app=app)
+
+        # vendor_content = "buy bread"
+
+        response = client.post("/VendorInformation/",
+            json={
+                "VendorName": "ABC Company",
+                "VendorAddress": "25th street",
+                "NTN_No": "123456",
+                "STN_No": "123456",
+                "ContactPerson": "Mr. A",
+                "Contact_No": "123456",
+                "Email": "abc@abc.com",
+                "Enabled": True,
+                "BankAC_No": "123456",
+                }
+        )
+
+        data = response.json()
+
+        assert response.status_code == 200
+        assert data["VendorName"] == "ABC Company"
+        assert data["VendorAddress"] == "25th street"
+        assert data["NTN_No"] == "123456"
+        assert data["STN_No"] == "123456"
+        assert data["ContactPerson"] == "Mr. A"
+        assert data["Contact_No"] == "123456"
+        assert data["Email"] == "abc@abc.com"
+        assert data["Enabled"] == True
+        assert data["BankAC_No"] == "123456"
+        assert data["VendorCode"] is not None
+
+def test_create_vendor_incomplete():
+    # No secret_name
+    connection_string = str(settings.TEST_DATABASE_URL).replace(
+    "postgresql", "postgresql+psycopg")
+    if connection_string is None:
+        raise EnvironmentError("TEST_DATABASE_URL not found in .env file.")
+
+    engine = create_engine(
+        connection_string, connect_args={"sslmode": "require"}, pool_recycle=300)
+
+    SQLModel.metadata.create_all(engine)  
+
+    with Session(engine) as session:  
+
+        def get_session_override():  
+                return session  
+
+        app.dependency_overrides[get_session] = get_session_override 
+
+        client = TestClient(app=app)
+
+        response = client.post(
+            "/VendorInformation/",
+            json={
+                    "VendorName": "ABC Company",
+                    "NTN_No": "123456",
+                    "STN_No": "123456",
+                    "ContactPerson": "Mr. A",
+                    "Contact_No": "123456",
+                    "Email": "abc@abc.com",
+            }
+        )
+        assert response.status_code == 422
+
+def test_create_vendor_invalid():
+    # No secret_name
+    connection_string = str(settings.TEST_DATABASE_URL).replace(
+        "postgresql", "postgresql+psycopg")
+    if connection_string is None:
+        raise EnvironmentError("TEST_DATABASE_URL not found in .env file.")
+
+    engine = create_engine(
+        connection_string, connect_args={"sslmode": "require"}, pool_recycle=300)
+
+    SQLModel.metadata.create_all(engine)  
+
+    with Session(engine) as session:  
+
+        def get_session_override():  
+                return session  
+
+        app.dependency_overrides[get_session] = get_session_override 
+
+        client = TestClient(app=app)
+
+        response = client.post(
+            "/VendorInformation/",
+            json={
+                    "VendorName": "ABC Company",
+                    "NTN_No": "123456",
+                    "STN_No": 123456,
+                    "ContactPerson": "Mr. A",
+                    "Contact_No": "123456",
+                    "Email": "abc@abc.com",
+            }
+        )
+        assert response.status_code == 422
+
+
+def test_read_vendors():
+
+    connection_string = str(settings.TEST_DATABASE_URL).replace(
+        "postgresql", "postgresql+psycopg")
+    if connection_string is None:
+        raise EnvironmentError("TEST_DATABASE_URL not found in .env file.")
+
+    engine = create_engine(
+        connection_string, connect_args={"sslmode": "require"}, pool_recycle=300)
+
+    SQLModel.metadata.create_all(engine)  
+
+    with Session(engine) as session:  
+
+        def get_session_override():  
+                return session  
+
+        app.dependency_overrides[get_session] = get_session_override 
+        client = TestClient(app=app)
+        vendor_1 = VendorInformation(
+            VendorName = "ABC Company",
+            VendorAddress = "25th street",
+            NTN_No = "123456",
+            STN_No = "123456",
+            ContactPerson = "Mr. A",
+            Contact_No = "123456",
+            Email = "abc@abc.com",
+            Enabled = True,
+            BankAC_No = "123456"
+        )
+        vendor_2 = VendorInformation(
+            VendorName = "DEF Company",
+            VendorAddress = "26th street",
+            NTN_No = "67890",
+            STN_No = "67890",
+            ContactPerson = "Mr. B",
+            Contact_No = "67890",
+            Email = "def@def.com",
+            Enabled = True,
+            BankAC_No = "67890"
+        )
+        session.add(vendor_1)
+        session.add(vendor_2)
+        session.commit()
+
+        response = client.get("/VendorInformation/")
+        data = response.json()
+        length = len(data)
+        
+        assert response.status_code == 200
+        
+        assert len(data) == length
+        assert data[length-2]["VendorName"] == vendor_1.VendorName
+        assert data[length-2]["VendorAddress"] == vendor_1.VendorAddress
+        assert data[length-2]["NTN_No"] == vendor_1.NTN_No
+        assert data[length-2]["STN_No"] == vendor_1.STN_No
+        assert data[length-2]["ContactPerson"] == vendor_1.ContactPerson
+        assert data[length-2]["Contact_No"] == vendor_1.Contact_No
+        assert data[length-2]["Email"] == vendor_1.Email
+        assert data[length-2]["Enabled"] == vendor_1.Enabled
+        assert data[length-2]["BankAC_No"] == vendor_1.BankAC_No
+        assert data[length-2]["VendorCode"] == vendor_1.VendorCode
+        
+        assert data[length-2]["VendorName"] == vendor_2.VendorName
+        assert data[length-2]["VendorAddress"] == vendor_2.VendorAddress
+        assert data[length-2]["NTN_No"] == vendor_2.NTN_No
+        assert data[length-2]["STN_No"] == vendor_2.STN_No
+        assert data[length-2]["ContactPerson"] == vendor_2.ContactPerson
+        assert data[length-2]["Contact_No"] == vendor_2.Contact_No
+        assert data[length-2]["Email"] == vendor_2.Email
+        assert data[length-2]["Enabled"] == vendor_2.Enabled
+        assert data[length-2]["BankAC_No"] == vendor_2.BankAC_No
+        assert data[length-2]["VendorCode"] == vendor_2.VendorCode
+
+
+def test_read_vendor():
+
+    connection_string = str(settings.TEST_DATABASE_URL).replace(
+        "postgresql", "postgresql+psycopg")
+    if connection_string is None:
+        raise EnvironmentError("TEST_DATABASE_URL not found in .env file.")
+
+    engine = create_engine(
+        connection_string, connect_args={"sslmode": "require"}, pool_recycle=300)
+
+    SQLModel.metadata.create_all(engine)  
+
+    with Session(engine) as session:  
+
+        def get_session_override():  
+                return session  
+
+        app.dependency_overrides[get_session] = get_session_override 
+        client = TestClient(app=app)
+        vendor_1 = VendorInformation(
+            VendorName = "ABC Company",
+            VendorAddress = "25th street",
+            NTN_No = "123456",
+            STN_No = "123456",
+            ContactPerson = "Mr. A",
+            Contact_No = "123456",
+            Email = "abc@abc.com",
+            Enabled = True,
+            BankAC_No = "123456"
+        )
+        session.add(vendor_1)
+        session.commit()
+
+        response = client.get("/VendorInformation/{vendor_1.VendorCode}")
+        data = response.json()
+        
+        assert response.status_code == 200
+        
+        assert data["VendorName"] == vendor_1.VendorName
+        assert data["VendorAddress"] == vendor_1.VendorAddress
+        assert data["NTN_No"] == vendor_1.NTN_No
+        assert data["STN_No"] == vendor_1.STN_No
+        assert data["ContactPerson"] == vendor_1.ContactPerson
+        assert data["Contact_No"] == vendor_1.Contact_No
+        assert data["Email"] == vendor_1.Email
+        assert data["Enabled"] == vendor_1.Enabled
+        assert data["BankAC_No"] == vendor_1.BankAC_No
+        assert data["VendorCode"] == vendor_1.VendorCode
+
+
+def test_update_vendor():
+
+    connection_string = str(settings.TEST_DATABASE_URL).replace(
+        "postgresql", "postgresql+psycopg")
+    if connection_string is None:
+        raise EnvironmentError("TEST_DATABASE_URL not found in .env file.")
+
+    engine = create_engine(
+        connection_string, connect_args={"sslmode": "require"}, pool_recycle=300)
+
+    SQLModel.metadata.create_all(engine)  
+
+    with Session(engine) as session:  
+
+        def get_session_override():  
+                return session  
+
+        app.dependency_overrides[get_session] = get_session_override 
+        client = TestClient(app=app)
+        vendor_1 = VendorInformation(
+            VendorName = "ABC Company",
+            VendorAddress = "25th street",
+            NTN_No = "123456",
+            STN_No = "123456",
+            ContactPerson = "Mr. A",
+            Contact_No = "123456",
+            Email = "abc@abc.com",
+            Enabled = True,
+            BankAC_No = "123456"
+        )
+        session.add(vendor_1)
+        session.commit()
+
+        response = client.patch("/VendorInformation/{vendor_1.VendorCode}", json={"Enabled":False})
+        data = response.json()
+        
+        assert response.status_code == 200
+        
+        assert data["VendorName"] == vendor_1.VendorName
+        assert data["VendorAddress"] == vendor_1.VendorAddress
+        assert data["NTN_No"] == vendor_1.NTN_No
+        assert data["STN_No"] == vendor_1.STN_No
+        assert data["ContactPerson"] == vendor_1.ContactPerson
+        assert data["Contact_No"] == vendor_1.Contact_No
+        assert data["Email"] == vendor_1.Email
+        assert data["Enabled"] == vendor_1.Enabled
+        assert data["BankAC_No"] == vendor_1.BankAC_No
+        assert data["VendorCode"] == vendor_1.VendorCode
+
+
+def test_change_vendor():
+
+    connection_string = str(settings.TEST_DATABASE_URL).replace(
+        "postgresql", "postgresql+psycopg")
+    if connection_string is None:
+        raise EnvironmentError("TEST_DATABASE_URL not found in .env file.")
+
+    engine = create_engine(
+        connection_string, connect_args={"sslmode": "require"}, pool_recycle=300)
+
+    SQLModel.metadata.create_all(engine)  
+
+    with Session(engine) as session:  
+
+        def get_session_override():  
+                return session  
+
+        app.dependency_overrides[get_session] = get_session_override 
+        client = TestClient(app=app)
+        vendor_1 = VendorInformation(
+            VendorName = "ABC Company",
+            VendorAddress = "25th street",
+            NTN_No = "123456",
+            STN_No = "123456",
+            ContactPerson = "Mr. A",
+            Contact_No = "123456",
+            Email = "abc@abc.com",
+            Enabled = True,
+            BankAC_No = "123456"
+        )
+        session.add(vendor_1)
+        session.commit()
+
+        response = client.patch("/VendorInformation/{vendor_1.VendorCode}", json={
+                                                                                    "VendorName" : "DEF Company",
+                                                                                    "VendorAddress" : "26th street",
+                                                                                    "NTN_No" : "67890",
+                                                                                    "STN_No" : "67890",
+                                                                                    "ContactPerson" : "Mr. B",
+                                                                                    "Contact_No" : "67890",
+                                                                                    "Email" : "def@def.com",
+                                                                                    "Enabled" : True,
+                                                                                    "BankAC_No" : "67890"
+                                                                                }
+                                )
+        data = response.json()
+        
+        assert response.status_code == 200
+        
+        assert data["VendorName"] == "DEF Company"
+        assert data["VendorAddress"] == "26th street"
+        assert data["NTN_No"] == "67890"
+        assert data["STN_No"] == "67890"
+        assert data["ContactPerson"] == "Mr. B"
+        assert data["Contact_No"] == "67890"
+        assert data["Email"] == "def@def.com"
+        assert data["Enabled"] == True
+        assert data["BankAC_No"] == "67890"
+        assert data["VendorCode"] == vendor_1.VendorCode
+
+
+def test_delete_vendor():
+
+    connection_string = str(settings.TEST_DATABASE_URL).replace(
+        "postgresql", "postgresql+psycopg")
+    if connection_string is None:
+        raise EnvironmentError("TEST_DATABASE_URL not found in .env file.")
+
+    engine = create_engine(
+        connection_string, connect_args={"sslmode": "require"}, pool_recycle=300)
+
+    SQLModel.metadata.create_all(engine)  
+
+    with Session(engine) as session:  
+
+        def get_session_override():  
+                return session  
+
+        app.dependency_overrides[get_session] = get_session_override 
+        client = TestClient(app=app)
+
+        vendor_1 = VendorInformation(
+            VendorName = "ABC Company",
+            VendorAddress = "25th street",
+            NTN_No = "123456",
+            STN_No = "123456",
+            ContactPerson = "Mr. A",
+            Contact_No = "123456",
+            Email = "abc@abc.com",
+            Enabled = True,
+            BankAC_No = "123456"
+        )
+        session.add(vendor_1)
+        session.commit()
+
+        response = client.delete(f"/heroes/{vendor_1.VendorCode}")
+        vendor_in_db = session.get(VendorInformation, vendor_1.VendorCode)
+
+        assert response.status_code == 200
+        assert vendor_in_db is None

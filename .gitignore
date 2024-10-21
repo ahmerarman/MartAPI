@@ -1,0 +1,6 @@
+.env
+.mypy_cache
+.pytest_cache
+.devcontainer
+.github
+env_backup
